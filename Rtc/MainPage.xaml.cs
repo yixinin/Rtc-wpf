@@ -96,7 +96,7 @@ namespace Rtc
             RTCMediaStreamConstraints mediaStreamConstraints = new RTCMediaStreamConstraints() //设置要获取的流 
             {
                 audioEnabled = true,
-                videoEnabled = true
+                videoEnabled = false
             };
 
             var apd = LocalMedia.GetAudioPlayoutDevices();
@@ -211,15 +211,14 @@ namespace Rtc
             var candiate = await GetCandiate(m);
             if (candiate != "")
             {
+                var candidates = JsonConvert.DeserializeObject<List<string>>(candiate);
                 if (fromUidTb.Text == "")
                 {
-                    if (CurrentRoom.Pub.IceConnectionState == RTCIceConnectionState.Completed)
+                    foreach (var c in candidates)
                     {
-
-                        Debug.WriteLine("重复添加candidate");
-                        return;
+                        await CurrentRoom.Pub.AddIceCandidate(JsonConvert.DeserializeObject<RTCIceCandidate>(c));
                     }
-                    await CurrentRoom.Pub.AddIceCandidate(JsonConvert.DeserializeObject<RTCIceCandidate>(candiate));
+
                 }
                 else
                 {
