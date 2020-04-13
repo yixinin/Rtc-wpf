@@ -4,7 +4,9 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
-  IgnorableNamespaces="uap mp">
+  xmlns:uap4="http://schemas.microsoft.com/appx/manifest/uap/windows10/4"
+  xmlns:uap6="http://schemas.microsoft.com/appx/manifest/uap/windows10/6"
+  IgnorableNamespaces="uap mp uap4 uap6">
 
   <Identity
     Name="ea1c4e85-2a0a-4918-844f-457090404600"
@@ -46,6 +48,11 @@
   <Capabilities>
     <Capability Name="internetClient" />
     <Capability Name="internetClientServer"/>
+    <uap:Capability Name="musicLibrary"/>
+    <uap4:Capability Name="userDataTasks"/>
+    <uap4:Capability Name="offlineMapsManagement"/>
+    <uap6:Capability Name="graphicsCapture"/>
+    <uap:Capability Name="removableStorage"/>
     <DeviceCapability Name="webcam"/>
     <DeviceCapability Name="microphone"/>
   </Capabilities>
