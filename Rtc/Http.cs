@@ -11,7 +11,7 @@ namespace Rtc
 {
     public class Http
     {
-        const string BaseURL = "http://localhost:8080/";
+        const string BaseURL = "http://10.0.0.218:8080/";
 
         public async static Task<string> PostAsnyc(object m, string url)
         {
@@ -38,5 +38,21 @@ namespace Rtc
 
             return "";
         }
+
+        public async static Task<string> GetAsync(string route, string p)
+        {
+            var httpClient = new HttpClient();
+            try
+            {
+                var url = BaseURL + route + p;
+                return await httpClient.GetStringAsync(new Uri(url));
+            }
+            catch(Exception ex)
+            {
+                Debug.WriteLine(ex);
+            }
+            return "";
+        }
+
     }
 }
