@@ -95,7 +95,7 @@ namespace Rtc
 
             RTCMediaStreamConstraints mediaStreamConstraints = new RTCMediaStreamConstraints() //设置要获取的流 
             {
-                audioEnabled = true,
+                audioEnabled = false,
                 videoEnabled = false
             };
 
@@ -109,10 +109,12 @@ namespace Rtc
             if (apd.Count > 0)
             {
                 LocalMedia.SelectAudioPlayoutDevice(apd[0]);
+                mediaStreamConstraints.audioEnabled = true;
             }
             if (vcd.Count > 0)
             {
                 LocalMedia.SelectVideoDevice(vcd.First(p => p.Location.Panel == Windows.Devices.Enumeration.Panel.Front));//设置视频捕获设备
+                mediaStreamConstraints.videoEnabled = true;
             }
 
 
