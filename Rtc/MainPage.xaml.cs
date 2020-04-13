@@ -150,8 +150,18 @@ namespace Rtc
 
         public async Task CreatOffer(long uid, long fromUid) //此时是发起方的操作
         {
-            var offer = await CurrentRoom.Pub.CreateOffer();
-            await CurrentRoom.Pub.SetLocalDescription(offer);
+            RTCSessionDescription offer;
+            if (fromUid == 0)
+            {
+                offer = await CurrentRoom.Pub.CreateOffer();
+                await CurrentRoom.Pub.SetLocalDescription(offer);
+            }
+            else
+            {
+                offer = await CurrentRoom.Recvs[fromUid].CreateOffer();
+                await CurrentRoom.Recvs[fromUid].SetLocalDescription(offer);
+            }
+
 
             var m = new GetAnswerModel();
             m.offer = offer.Sdp;
