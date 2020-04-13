@@ -47,8 +47,8 @@ namespace Rtc
             Random R = new Random();
             Uid = R.Next(1000, 10000);
 
-            var test = Http.GetAsync("Test", "").Result;
-            Debug.WriteLine(test);
+            //var test = Http.GetAsync("Test", "").Result;
+            //Debug.WriteLine(test);
         }
 
 
