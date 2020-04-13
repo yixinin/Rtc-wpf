@@ -232,12 +232,11 @@ namespace Rtc
                     {
                         return;
                     }
-                    if (CurrentRoom.Recvs[fromUid].IceConnectionState == RTCIceConnectionState.Completed)
+                    foreach (var c in candidates)
                     {
-                        Debug.WriteLine("重复添加candidate fromUid=" + fromUid.ToString());
-                        return;
+                        await CurrentRoom.Recvs[fromUid].AddIceCandidate(JsonConvert.DeserializeObject<RTCIceCandidate>(c));
                     }
-                    await CurrentRoom.Recvs[fromUid].AddIceCandidate(JsonConvert.DeserializeObject<RTCIceCandidate>(candiate));
+
                 }
             }
 
