@@ -83,9 +83,20 @@ namespace Rtc
             CurrentRoom.Recvs[fromUid].OnAddStream += (p) =>
             {
                 var stream = p.Stream;
+
                 var videotracks = stream.GetVideoTracks();
-                var source = LocalMedia.CreateMediaSource(videotracks.FirstOrDefault(), stream.Id);
+                var media = Media.CreateMedia();
+
+                var apd = media.GetAudioPlayoutDevices();
+                if (apd.Count > 0)
+                {
+                    media.SelectAudioPlayoutDevice(apd[0]);
+                }
+
+                var source = media.CreateMediaSource(videotracks.FirstOrDefault(), stream.Id);
+
                 RemoteMediaPlayer.SetMediaStreamSource(source);
+
                 RemoteMediaPlayer.Play();
             };
 
