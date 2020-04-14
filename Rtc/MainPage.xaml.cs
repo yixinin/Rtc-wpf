@@ -178,7 +178,15 @@ namespace Rtc
                 var answer = new RTCSessionDescription();
                 answer.Type = RTCSdpType.Answer;
                 answer.Sdp = answerSdp;
-                await CurrentRoom.Pub.SetRemoteDescription(answer);
+                if (fromUid == 0)
+                {
+                    await CurrentRoom.Pub.SetRemoteDescription(answer);
+                }
+                else
+                {
+                    await CurrentRoom.Recvs[fromUid].SetRemoteDescription(answer);
+                }
+                
             }
 
         }
