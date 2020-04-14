@@ -55,19 +55,18 @@ namespace Rtc
 
 
 
-        public async void CreateReceiver(long fromUid)
+        public async Task CreateReceiver(MediaStream mediaStream, long fromUid)
         {
             List<RTCIceServer> iceservers = new List<RTCIceServer>()
               {
-                    new RTCIceServer {Url= stun},
+                    new RTCIceServer {Url=stun},
                }; //不一定是这么多个
 
             RTCConfiguration configuration = new RTCConfiguration() { BundlePolicy = RTCBundlePolicy.Balanced, IceServers = iceservers, IceTransportPolicy = RTCIceTransportPolicy.All };
 
-            CurrentRoom.Recvs.Add(fromUid, new RTCPeerConnection(configuration));
-
-
-
+            var conn = new RTCPeerConnection(configuration);
+            CurrentRoom.Recvs.Add(fromUid, conn);
+            CurrentRoom.Recvs[fromUid].AddStream(mediaStream);
             CurrentRoom.Recvs[fromUid].OnIceCandidate += async (p) =>
             {
                 var Candidate = p.Candidate;
@@ -95,7 +94,7 @@ namespace Rtc
         }
 
 
-        public async Task CaptureMedia()
+        public async Task CaptureMedia(long fromUid)
         {
             LocalMedia = Media.CreateMedia();//创建一个Media对象
 
@@ -106,22 +105,28 @@ namespace Rtc
             };
 
             var apd = LocalMedia.GetAudioPlayoutDevices();
-            var acd = LocalMedia.GetAudioCaptureDevices();
-            var vcd = LocalMedia.GetVideoCaptureDevices();
-            if (acd.Count > 0)
-            {
-                LocalMedia.SelectAudioCaptureDevice(acd[0]);
-            }
             if (apd.Count > 0)
             {
                 LocalMedia.SelectAudioPlayoutDevice(apd[0]);
                 mediaStreamConstraints.audioEnabled = true;
             }
-            if (vcd.Count > 0)
+
+            if (fromUid == 0)
             {
-                LocalMedia.SelectVideoDevice(vcd.First(p => p.Location.Panel == Windows.Devices.Enumeration.Panel.Front));//设置视频捕获设备
-                mediaStreamConstraints.videoEnabled = true;
+                var acd = LocalMedia.GetAudioCaptureDevices();
+                var vcd = LocalMedia.GetVideoCaptureDevices();
+                if (acd.Count > 0)
+                {
+                    LocalMedia.SelectAudioCaptureDevice(acd[0]);
+                }
+
+                if (vcd.Count > 0)
+                {
+                    LocalMedia.SelectVideoDevice(vcd.First(p => p.Location.Panel == Windows.Devices.Enumeration.Panel.Front));//设置视频捕获设备
+                    mediaStreamConstraints.videoEnabled = true;
+                }
             }
+
 
 
             var mediaStream = await LocalMedia.GetUserMedia(mediaStreamConstraints);//获取视频流 这里视频和音频是一起传输的
@@ -133,15 +138,23 @@ namespace Rtc
                 LocalMediaPlayer.SetMediaStreamSource(source); //设置MediaElement的播放源
                 LocalMediaPlayer.Play();
             }
+            if (fromUid == 0)
+            {
+                await CreatePublisher(mediaStream);
+            }
+            else
+            {
+                await CreateReceiver(mediaStream, fromUid);
+            }
 
-            await CreatePublisher(mediaStream);
         }
 
         async private Task CreatePublisher(MediaStream mediaStream)
         {
             List<RTCIceServer> iceservers = new List<RTCIceServer>()
               {
-                    new RTCIceServer {Url="stun:stun.ideasip.com" },
+                //"stun:stun.ideasip.com"
+                    new RTCIceServer {Url=stun },
                }; //不一定是这么多个
 
             RTCConfiguration configuration = new RTCConfiguration() { BundlePolicy = RTCBundlePolicy.Balanced, IceServers = iceservers, IceTransportPolicy = RTCIceTransportPolicy.All };
@@ -186,7 +199,7 @@ namespace Rtc
                 {
                     await CurrentRoom.Recvs[fromUid].SetRemoteDescription(answer);
                 }
-                
+
             }
 
         }
@@ -205,13 +218,13 @@ namespace Rtc
         private void Conn_OnAddStream(MediaStreamEvent __param0)
         {
             var stream = __param0.Stream;
-           
+
             var videotracks = stream.GetVideoTracks();
-            
+
             var source = LocalMedia.CreateMediaSource(videotracks.FirstOrDefault(), stream.Id);
-          
+
             RemoteMediaPlayer.SetMediaStreamSource(source);
-           
+
             RemoteMediaPlayer.Play();
         }
 
@@ -275,15 +288,15 @@ namespace Rtc
 
         }
 
-        public void JoinBtn_Click(object sender, RoutedEventArgs e)
+        public async void JoinBtn_Click(object sender, RoutedEventArgs e)
         {
             long.TryParse(fromUidTb.Text, out var fromUid);
-            CreateReceiver(fromUid);
+            await CaptureMedia(fromUid);
         }
 
         public async void ConnectBtn_Click(object sender, RoutedEventArgs e)
         {
-            await CaptureMedia();
+            await CaptureMedia(0);
         }
     }
 
