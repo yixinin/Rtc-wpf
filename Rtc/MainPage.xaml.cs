@@ -93,6 +93,22 @@ namespace Rtc
 
         }
 
+        async private Task CreatePublisher(MediaStream mediaStream)
+        {
+            List<RTCIceServer> iceservers = new List<RTCIceServer>()
+              {
+                //"stun:stun.ideasip.com"
+                    new RTCIceServer {Url=stun },
+               };
+
+            RTCConfiguration configuration = new RTCConfiguration() { BundlePolicy = RTCBundlePolicy.Balanced, IceServers = iceservers, IceTransportPolicy = RTCIceTransportPolicy.All };
+            CurrentRoom.Pub = new RTCPeerConnection(configuration);
+            CurrentRoom.Pub.AddStream(mediaStream);
+            CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
+            CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
+            await CreatOffer(Uid, 0);
+        }
+
 
         public async Task CaptureMedia(long fromUid)
         {
@@ -108,7 +124,6 @@ namespace Rtc
             if (apd.Count > 0)
             {
                 LocalMedia.SelectAudioPlayoutDevice(apd[0]);
-                mediaStreamConstraints.audioEnabled = true;
             }
 
             if (fromUid == 0)
@@ -117,13 +132,15 @@ namespace Rtc
                 var vcd = LocalMedia.GetVideoCaptureDevices();
                 if (acd.Count > 0)
                 {
+                    mediaStreamConstraints.audioEnabled = true;
                     LocalMedia.SelectAudioCaptureDevice(acd[0]);
                 }
 
                 if (vcd.Count > 0)
                 {
-                    LocalMedia.SelectVideoDevice(vcd.First(p => p.Location.Panel == Windows.Devices.Enumeration.Panel.Front));//设置视频捕获设备
                     mediaStreamConstraints.videoEnabled = true;
+                    LocalMedia.SelectVideoDevice(vcd.First(p => p.Location.Panel == Windows.Devices.Enumeration.Panel.Front));//设置视频捕获设备
+                    
                 }
             }
 
@@ -131,7 +148,7 @@ namespace Rtc
 
             var mediaStream = await LocalMedia.GetUserMedia(mediaStreamConstraints);//获取视频流 这里视频和音频是一起传输的
             var videotracs = mediaStream.GetVideoTracks();
-            var audiotracs = mediaStream.GetAudioTracks();
+            //var audiotracs = mediaStream.GetAudioTracks();
             if (videotracs.Count > 0)
             {
                 var source = LocalMedia.CreateMediaSource(videotracs.FirstOrDefault(), mediaStream.Id);//创建播放源
@@ -149,22 +166,7 @@ namespace Rtc
 
         }
 
-        async private Task CreatePublisher(MediaStream mediaStream)
-        {
-            List<RTCIceServer> iceservers = new List<RTCIceServer>()
-              {
-                //"stun:stun.ideasip.com"
-                    new RTCIceServer {Url=stun },
-               }; //不一定是这么多个
-
-            RTCConfiguration configuration = new RTCConfiguration() { BundlePolicy = RTCBundlePolicy.Balanced, IceServers = iceservers, IceTransportPolicy = RTCIceTransportPolicy.All };
-            CurrentRoom.Pub = new RTCPeerConnection(configuration);
-            CurrentRoom.Pub.AddStream(mediaStream);
-            CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
-            CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
-            await CreatOffer(Uid, 0);
-        }
-
+       
         public async Task CreatOffer(long uid, long fromUid) //此时是发起方的操作
         {
             RTCSessionDescription offer;
@@ -220,11 +222,18 @@ namespace Rtc
             var stream = __param0.Stream;
 
             var videotracks = stream.GetVideoTracks();
+            var media = Media.CreateMedia();
 
-            var source = LocalMedia.CreateMediaSource(videotracks.FirstOrDefault(), stream.Id);
-
+            var apd = media.GetAudioPlayoutDevices();
+            if (apd.Count > 0)
+            {
+                media.SelectAudioPlayoutDevice(apd[0]);
+            }
+           
+            var source = media.CreateMediaSource(videotracks.FirstOrDefault(), stream.Id);
+       
             RemoteMediaPlayer.SetMediaStreamSource(source);
-
+            
             RemoteMediaPlayer.Play();
         }
 
