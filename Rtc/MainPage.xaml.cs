@@ -33,6 +33,8 @@ namespace Rtc
         public Media LocalMedia { get; set; }
         public Room CurrentRoom { get; set; }
 
+        public List<SendCadidate> Candidates { get; set; }
+
         public long Uid { get; set; }
         public MainPage()
         {
@@ -46,7 +48,7 @@ namespace Rtc
             };
             Random R = new Random();
             Uid = R.Next(1000, 10000);
-
+            Candidates = new List<SendCadidate>();
             //var test = Http.GetAsync("Test", "").Result;
             //Debug.WriteLine(test);
         }
@@ -64,7 +66,7 @@ namespace Rtc
 
             CurrentRoom.Recvs.Add(fromUid, new RTCPeerConnection(configuration));
 
-            await CreatOffer(Uid, fromUid);
+            
 
             CurrentRoom.Recvs[fromUid].OnIceCandidate += async (p) =>
             {
@@ -74,7 +76,8 @@ namespace Rtc
                 m.candidate = candidate;
                 m.uid = Uid;
                 m.fromUid = fromUid;
-                await Send_Candidate(m);
+                Candidates.Add(m);
+                //await Send_Candidate(m);
             };
             CurrentRoom.Recvs[fromUid].OnAddStream += (p) =>
             {
@@ -85,6 +88,7 @@ namespace Rtc
                 RemoteMediaPlayer.Play();
             };
 
+            await CreatOffer(Uid, fromUid);
 
         }
 
@@ -140,12 +144,9 @@ namespace Rtc
             RTCConfiguration configuration = new RTCConfiguration() { BundlePolicy = RTCBundlePolicy.Balanced, IceServers = iceservers, IceTransportPolicy = RTCIceTransportPolicy.All };
             CurrentRoom.Pub = new RTCPeerConnection(configuration);
             CurrentRoom.Pub.AddStream(mediaStream);
-
-
-            await CreatOffer(Uid, 0);
-
             CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
             CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
+            await CreatOffer(Uid, 0);  
         }
 
         public async Task CreatOffer(long uid, long fromUid) //此时是发起方的操作
@@ -176,11 +177,14 @@ namespace Rtc
                 await CurrentRoom.Pub.SetRemoteDescription(answer);
             }
 
-
         }
 
         public async Task<string> SendOffer(GetAnswerModel m)
         {
+            foreach (var c in Candidates)
+            {
+                await Send_Candidate(c);
+            }
             return await Http.PostAsnyc(m, "getAnswer");
         }
 
@@ -200,7 +204,8 @@ namespace Rtc
             var m = new SendCadidate();
             m.candidate = candidate;
             m.uid = Uid;
-            await Send_Candidate(m);
+            //await Send_Candidate(m);
+            Candidates.Add(m);
         }
 
         public async Task<string> Send_Candidate(SendCadidate m)
