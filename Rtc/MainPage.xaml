@@ -14,8 +14,8 @@
             <RowDefinition /> 
         </Grid.RowDefinitions>
         <StackPanel Width="600" Height="300" Orientation="Horizontal">
-            <MediaElement x:Name="LocalMediaPlayer" Width="300"  AutoPlay="True"/>
-            <MediaElement x:Name="RemoteMediaPlayer" Width="300"  AutoPlay="True" />
+            <MediaElement x:Name="LocalMediaPlayer" Width="300"  AutoPlay="False"/>
+            <MediaElement x:Name="RemoteMediaPlayer" Width="300"  AutoPlay="False" />
         </StackPanel>
         <StackPanel Grid.Row="1" HorizontalAlignment="Center" Orientation="Horizontal" Height="50">
             <Button x:Name="ConnectBtn" Click="ConnectBtn_Click" VerticalAlignment="Bottom">Connect</Button>

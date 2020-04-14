@@ -131,6 +131,7 @@ namespace Rtc
             {
                 var source = LocalMedia.CreateMediaSource(videotracs.FirstOrDefault(), mediaStream.Id);//创建播放源
                 LocalMediaPlayer.SetMediaStreamSource(source); //设置MediaElement的播放源
+                LocalMediaPlayer.Play();
             }
 
             await CreatePublisher(mediaStream);
@@ -196,9 +197,13 @@ namespace Rtc
         private void Conn_OnAddStream(MediaStreamEvent __param0)
         {
             var stream = __param0.Stream;
+           
             var videotracks = stream.GetVideoTracks();
+            
             var source = LocalMedia.CreateMediaSource(videotracks.FirstOrDefault(), stream.Id);
+          
             RemoteMediaPlayer.SetMediaStreamSource(source);
+           
             RemoteMediaPlayer.Play();
         }
 
