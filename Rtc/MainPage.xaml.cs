@@ -32,7 +32,7 @@ namespace Rtc
         public Media LocalMedia { get; set; }
         public Room CurrentRoom { get; set; }
 
-        public List<SendCadidate> Candidates { get; set; }
+        public List<SendCadidatModel> Candidates { get; set; }
 
         public long Uid { get; set; }
         public MainPage()
@@ -47,7 +47,7 @@ namespace Rtc
             };
             Random R = new Random();
             Uid = R.Next(1000, 10000);
-            Candidates = new List<SendCadidate>();
+            Candidates = new List<SendCadidatModel>();
             var iceServers = new List<RTCIceServer>()
             {
                 new RTCIceServer{Url="stun:stun.ideasip.com"},
@@ -64,6 +64,66 @@ namespace Rtc
             //Debug.WriteLine(test);
         }
 
+        public async Task CaptureMedia(long fromUid)
+        {
+            LocalMedia = Media.CreateMedia();//创建一个Media对象
+
+            RTCMediaStreamConstraints mediaStreamConstraints = new RTCMediaStreamConstraints() //设置要获取的流 
+            {
+                audioEnabled = false,
+                videoEnabled = false
+            };
+
+            //音频播放
+            var apd = LocalMedia.GetAudioPlayoutDevices();
+            if (apd.Count > 0)
+            {
+                LocalMedia.SelectAudioPlayoutDevice(apd[0]);
+            }
+
+            if (fromUid == 0)
+            {
+                //音频捕获
+                var acd = LocalMedia.GetAudioCaptureDevices();
+                if (acd.Count > 0)
+                {
+                    mediaStreamConstraints.audioEnabled = true;
+                    LocalMedia.SelectAudioCaptureDevice(acd[0]);
+                }
+
+                //视频捕获
+                var vcd = LocalMedia.GetVideoCaptureDevices();
+                if (vcd.Count > 0)
+                {
+                    mediaStreamConstraints.videoEnabled = true;
+                    LocalMedia.SelectVideoDevice(vcd.First(p => p.Location.Panel == Windows.Devices.Enumeration.Panel.Front));//设置视频捕获设备
+
+                }
+            }
+
+
+
+            var mediaStream = await LocalMedia.GetUserMedia(mediaStreamConstraints);//获取视频流 这里视频和音频是一起传输的
+
+            if (fromUid == 0)
+            {
+                var videotracs = mediaStream.GetVideoTracks();
+                //var audiotracs = mediaStream.GetAudioTracks();
+                if (videotracs.Count > 0)
+                {
+                    var source = LocalMedia.CreateMediaSource(videotracs.FirstOrDefault(), mediaStream.Id);//创建播放源
+                    LocalMediaPlayer.SetMediaStreamSource(source); //设置MediaElement的播放源
+                    LocalMediaPlayer.Play();
+                }
+                await CreatePublisher(mediaStream);
+            }
+            else
+            {
+                await CreateReceiver(mediaStream, fromUid);
+            }
+
+        }
+
 
 
         public async Task CreateReceiver(MediaStream mediaStream, long fromUid)
@@ -77,13 +137,12 @@ namespace Rtc
             {
                 var Candidate = p.Candidate;
                 var candidate = JsonConvert.SerializeObject(Candidate);
-                var m = new SendCadidate();
+                var m = new SendCadidatModel();
                 m.candidate = candidate;
                 m.uid = Uid;
                 m.fromUid = fromUid;
                 Candidates.Add(m);
-
-                await Send_Candidate(m);
+                await SendCandidate(m);
 
             };
             CurrentRoom.Recvs[fromUid].OnAddStream += (p) =>
@@ -91,15 +150,16 @@ namespace Rtc
                 var stream = p.Stream;
 
                 var videotracks = stream.GetVideoTracks();
-                var media = Media.CreateMedia();
+                //var media = Media.CreateMedia();
+                
 
-                var apd = media.GetAudioPlayoutDevices();
-                if (apd.Count > 0)
-                {
-                    media.SelectAudioPlayoutDevice(apd[0]);
-                }
+                //var apd = media.GetAudioPlayoutDevices();
+                //if (apd.Count > 0)
+                //{
+                //    media.SelectAudioPlayoutDevice(apd[0]);
+                //}
 
-                var source = media.CreateMediaSource(videotracks.FirstOrDefault(), stream.Id);
+                var source = LocalMedia.CreateMediaSource(videotracks.FirstOrDefault(), stream.Id);
 
                 RemoteMediaPlayer.SetMediaStreamSource(source);
 
@@ -118,65 +178,7 @@ namespace Rtc
             CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
             await CreatOffer(Uid, 0);
         }
-
-
-        public async Task CaptureMedia(long fromUid)
-        {
-            LocalMedia = Media.CreateMedia();//创建一个Media对象
-
-            RTCMediaStreamConstraints mediaStreamConstraints = new RTCMediaStreamConstraints() //设置要获取的流 
-            {
-                audioEnabled = false,
-                videoEnabled = false
-            };
-
-            var apd = LocalMedia.GetAudioPlayoutDevices();
-            if (apd.Count > 0)
-            {
-                LocalMedia.SelectAudioPlayoutDevice(apd[0]);
-            }
-
-            if (fromUid == 0)
-            {
-                var acd = LocalMedia.GetAudioCaptureDevices();
-                var vcd = LocalMedia.GetVideoCaptureDevices();
-                if (acd.Count > 0)
-                {
-                    mediaStreamConstraints.audioEnabled = true;
-                    LocalMedia.SelectAudioCaptureDevice(acd[0]);
-                }
-
-                if (vcd.Count > 0)
-                {
-                    mediaStreamConstraints.videoEnabled = true;
-                    LocalMedia.SelectVideoDevice(vcd.First(p => p.Location.Panel == Windows.Devices.Enumeration.Panel.Front));//设置视频捕获设备
-
-                }
-            }
-
-
-
-            var mediaStream = await LocalMedia.GetUserMedia(mediaStreamConstraints);//获取视频流 这里视频和音频是一起传输的
-            var videotracs = mediaStream.GetVideoTracks();
-            //var audiotracs = mediaStream.GetAudioTracks();
-            if (videotracs.Count > 0)
-            {
-                var source = LocalMedia.CreateMediaSource(videotracs.FirstOrDefault(), mediaStream.Id);//创建播放源
-                LocalMediaPlayer.SetMediaStreamSource(source); //设置MediaElement的播放源
-                LocalMediaPlayer.Play();
-            }
-            if (fromUid == 0)
-            {
-                await CreatePublisher(mediaStream);
-            }
-            else
-            {
-                await CreateReceiver(mediaStream, fromUid);
-            }
-
-        }
-
-
+         
         public async Task CreatOffer(long uid, long fromUid) //此时是发起方的操作
         {
             RTCSessionDescription offer;
@@ -222,7 +224,7 @@ namespace Rtc
             var answer = await Http.PostAsnyc(m, "getAnswer");
             foreach (var c in Candidates)
             {
-                await Send_Candidate(c);
+                await SendCandidate(c);
             }
             return answer;
         }
@@ -232,15 +234,15 @@ namespace Rtc
             var stream = __param0.Stream;
 
             var videotracks = stream.GetVideoTracks();
-            var media = Media.CreateMedia();
+            //var media = Media.CreateMedia();
 
-            var apd = media.GetAudioPlayoutDevices();
-            if (apd.Count > 0)
-            {
-                media.SelectAudioPlayoutDevice(apd[0]);
-            }
+            //var apd = media.GetAudioPlayoutDevices();
+            //if (apd.Count > 0)
+            //{
+            //    media.SelectAudioPlayoutDevice(apd[0]);
+            //}
 
-            var source = media.CreateMediaSource(videotracks.FirstOrDefault(), stream.Id);
+            var source = LocalMedia.CreateMediaSource(videotracks.FirstOrDefault(), stream.Id);
 
             RemoteMediaPlayer.SetMediaStreamSource(source);
 
@@ -251,14 +253,14 @@ namespace Rtc
         {
             var Candidate = __param0.Candidate;
             var candidate = JsonConvert.SerializeObject(Candidate);
-            var m = new SendCadidate();
+            var m = new SendCadidatModel();
             m.candidate = candidate;
             m.uid = Uid;
             Candidates.Add(m);
-            await Send_Candidate(m);
+            await SendCandidate(m);
         }
 
-        public async Task<string> Send_Candidate(SendCadidate m)
+        public async Task<string> SendCandidate(SendCadidatModel m)
         {
             return await Http.PostAsnyc(m, "sendCandidate");
         }
@@ -327,7 +329,7 @@ namespace Rtc
         public int roomId { get; set; }
     }
 
-    public class SendCadidate
+    public class SendCadidatModel
     {
         public int roomId { get; set; }
         public long uid { get; set; }
