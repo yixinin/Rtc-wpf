@@ -27,9 +27,8 @@ namespace Rtc
     /// </summary>
     public sealed partial class MainPage : Page
     {
-
-
-        const string stun = "stun:stun.voipgate.com:3478";
+         
+        public RTCConfiguration RtcConfig { get; set; }
         public Media LocalMedia { get; set; }
         public Room CurrentRoom { get; set; }
 
@@ -49,6 +48,18 @@ namespace Rtc
             Random R = new Random();
             Uid = R.Next(1000, 10000);
             Candidates = new List<SendCadidate>();
+            var iceServers = new List<RTCIceServer>()
+            {
+                new RTCIceServer{Url="stun:stun.ideasip.com"},
+                new RTCIceServer{Url="stun:stun.voipgate.com:3478"}
+
+            };
+            RtcConfig = new RTCConfiguration()
+            {
+                BundlePolicy = RTCBundlePolicy.Balanced,
+                IceServers = iceServers,
+                IceTransportPolicy = RTCIceTransportPolicy.All
+            };
             //var test = Http.GetAsync("Test", "").Result;
             //Debug.WriteLine(test);
         }
@@ -57,14 +68,9 @@ namespace Rtc
 
         public async Task CreateReceiver(MediaStream mediaStream, long fromUid)
         {
-            List<RTCIceServer> iceservers = new List<RTCIceServer>()
-              {
-                    new RTCIceServer {Url=stun},
-               }; //不一定是这么多个
+             
 
-            RTCConfiguration configuration = new RTCConfiguration() { BundlePolicy = RTCBundlePolicy.Balanced, IceServers = iceservers, IceTransportPolicy = RTCIceTransportPolicy.All };
-
-            var conn = new RTCPeerConnection(configuration);
+            var conn = new RTCPeerConnection(RtcConfig);
             CurrentRoom.Recvs.Add(fromUid, conn);
             CurrentRoom.Recvs[fromUid].AddStream(mediaStream);
             CurrentRoom.Recvs[fromUid].OnIceCandidate += async (p) =>
@@ -105,15 +111,8 @@ namespace Rtc
         }
 
         async private Task CreatePublisher(MediaStream mediaStream)
-        {
-            List<RTCIceServer> iceservers = new List<RTCIceServer>()
-              {
-                //"stun:stun.ideasip.com"
-                    new RTCIceServer {Url=stun },
-               };
-
-            RTCConfiguration configuration = new RTCConfiguration() { BundlePolicy = RTCBundlePolicy.Balanced, IceServers = iceservers, IceTransportPolicy = RTCIceTransportPolicy.All };
-            CurrentRoom.Pub = new RTCPeerConnection(configuration);
+        { 
+            CurrentRoom.Pub = new RTCPeerConnection(RtcConfig);
             CurrentRoom.Pub.AddStream(mediaStream);
             CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
             CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
@@ -151,7 +150,7 @@ namespace Rtc
                 {
                     mediaStreamConstraints.videoEnabled = true;
                     LocalMedia.SelectVideoDevice(vcd.First(p => p.Location.Panel == Windows.Devices.Enumeration.Panel.Front));//设置视频捕获设备
-                    
+
                 }
             }
 
@@ -177,7 +176,7 @@ namespace Rtc
 
         }
 
-       
+
         public async Task CreatOffer(long uid, long fromUid) //此时是发起方的操作
         {
             RTCSessionDescription offer;
@@ -240,11 +239,11 @@ namespace Rtc
             {
                 media.SelectAudioPlayoutDevice(apd[0]);
             }
-           
+
             var source = media.CreateMediaSource(videotracks.FirstOrDefault(), stream.Id);
-       
+
             RemoteMediaPlayer.SetMediaStreamSource(source);
-            
+
             RemoteMediaPlayer.Play();
         }
 
