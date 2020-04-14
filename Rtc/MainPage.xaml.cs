@@ -66,7 +66,7 @@ namespace Rtc
 
             CurrentRoom.Recvs.Add(fromUid, new RTCPeerConnection(configuration));
 
-            
+
 
             CurrentRoom.Recvs[fromUid].OnIceCandidate += async (p) =>
             {
@@ -77,7 +77,9 @@ namespace Rtc
                 m.uid = Uid;
                 m.fromUid = fromUid;
                 Candidates.Add(m);
-                //await Send_Candidate(m);
+
+                await Send_Candidate(m);
+
             };
             CurrentRoom.Recvs[fromUid].OnAddStream += (p) =>
             {
@@ -146,7 +148,7 @@ namespace Rtc
             CurrentRoom.Pub.AddStream(mediaStream);
             CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
             CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
-            await CreatOffer(Uid, 0);  
+            await CreatOffer(Uid, 0);
         }
 
         public async Task CreatOffer(long uid, long fromUid) //此时是发起方的操作
@@ -169,6 +171,7 @@ namespace Rtc
             m.uid = uid;
             m.fromUid = fromUid;
             var answerSdp = await SendOffer(m);
+
             if (answerSdp != "")
             {
                 var answer = new RTCSessionDescription();
@@ -181,11 +184,13 @@ namespace Rtc
 
         public async Task<string> SendOffer(GetAnswerModel m)
         {
+
+            var answer = await Http.PostAsnyc(m, "getAnswer");
             foreach (var c in Candidates)
             {
                 await Send_Candidate(c);
             }
-            return await Http.PostAsnyc(m, "getAnswer");
+            return answer;
         }
 
         private void Conn_OnAddStream(MediaStreamEvent __param0)
@@ -204,8 +209,8 @@ namespace Rtc
             var m = new SendCadidate();
             m.candidate = candidate;
             m.uid = Uid;
-            //await Send_Candidate(m);
             Candidates.Add(m);
+            await Send_Candidate(m);
         }
 
         public async Task<string> Send_Candidate(SendCadidate m)
