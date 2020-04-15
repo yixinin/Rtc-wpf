@@ -35,18 +35,22 @@ namespace Rtc
         public List<SendCadidatModel> Candidates { get; set; }
 
         public long Uid { get; set; }
+        public long FromUid { get; set; }
         public MainPage()
         {
             this.InitializeComponent();
             WebRTC.Initialize(this.Dispatcher);
+
+            Random R = new Random();
+            Uid = R.Next(1000, 10000);
+            uidTbk.Text = "Uid: " + Uid.ToString();
             CurrentRoom = new Room
             {
                 Id = 10001,
                 Uid = Uid,
                 Recvs = new Dictionary<long, RTCPeerConnection>()
             };
-            Random R = new Random();
-            Uid = R.Next(1000, 10000);
+
             Candidates = new List<SendCadidatModel>();
             var iceServers = new List<RTCIceServer>()
             {
@@ -60,7 +64,7 @@ namespace Rtc
                 IceServers = iceServers,
                 IceTransportPolicy = RTCIceTransportPolicy.All,
             };
-           
+
             //var test = Http.GetAsync("Test", "").Result;
             //Debug.WriteLine(test);
         }
@@ -116,11 +120,13 @@ namespace Rtc
                     LocalMediaPlayer.SetMediaStreamSource(source); //设置MediaElement的播放源
                     LocalMediaPlayer.Play();
                 }
-                await CreatePublisher(mediaStream);
+                //await CreatePublisher(mediaStream);
+               await CreateServer(mediaStream);
             }
             else
             {
-                await CreateReceiver(mediaStream, fromUid);
+                CreateClient(mediaStream);
+                //await CreateReceiver(mediaStream, fromUid);
             }
 
         }
@@ -132,7 +138,7 @@ namespace Rtc
 
 
             var conn = new RTCPeerConnection(RtcConfig);
-           
+
             CurrentRoom.Recvs.Add(fromUid, conn);
             CurrentRoom.Recvs[fromUid].AddStream(mediaStream);
             CurrentRoom.Recvs[fromUid].OnIceCandidate += async (p) =>
@@ -183,6 +189,31 @@ namespace Rtc
             CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
             CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
             await CreatOffer(Uid, 0);
+        }
+
+        public async Task CreateServer(MediaStream mediaStream)
+        {
+            CurrentRoom.Pub = new RTCPeerConnection(RtcConfig);
+            CurrentRoom.Pub.AddStream(mediaStream);
+            CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
+            CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
+
+            var offer = await CurrentRoom.Pub.CreateOffer();
+            await CurrentRoom.Pub.SetLocalDescription(offer);
+            await SendSdp(offer.Sdp, "offer");
+        }
+
+        public void CreateClient(MediaStream mediaStream)
+        {
+            CurrentRoom.Pub = new RTCPeerConnection(RtcConfig);
+            CurrentRoom.Pub.AddStream(mediaStream);
+            CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
+            CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
+            long.TryParse(fromUidTb.Text, out var fromUid);
+            if (fromUid != 0)
+            {
+                PollSdp("offer");
+            }
         }
 
         public async Task CreatOffer(long uid, long fromUid) //此时是发起方的操作
@@ -267,7 +298,8 @@ namespace Rtc
             };
             m.uid = Uid;
             Candidates.Add(m);
-            await SendCandidate(m); 
+            //await SendCandidate(m);
+            await SendCand(Candidate);
         }
 
         public async Task<string> SendCandidate(SendCadidatModel m)
@@ -338,6 +370,114 @@ namespace Rtc
         public async void ConnectBtn_Click(object sender, RoutedEventArgs e)
         {
             await CaptureMedia(0);
+        }
+
+        public void PollSdp(string sdpType)
+        {
+            DispatcherTimer timer = new DispatcherTimer();
+            timer.Interval = TimeSpan.FromSeconds(1);
+            timer.Tick += async (o, e) =>
+            {
+                if (FromUid == 0)
+                {
+                    long.TryParse(fromUidTb.Text, out var fromUid);
+                    if (fromUid == 0)
+                    {
+                        return;
+                    }
+                    FromUid = fromUid;
+                }
+                var m = new PollSdpModel
+                {
+                    sdpType = sdpType,
+                    fromUid = FromUid,
+                };
+                var sdp = await Http.PostAsnyc(m, "pollSdp");
+                if (sdp != "")
+                {
+                    await CurrentRoom.Pub.SetRemoteDescription(new RTCSessionDescription
+                    {
+                        Sdp = sdp,
+                        Type = sdpType == "offer" ? RTCSdpType.Offer : RTCSdpType.Answer,
+                    });
+
+                    if (sdpType == "offer")
+                    {
+                        var answer = await CurrentRoom.Pub.CreateAnswer();
+                        await CurrentRoom.Pub.SetLocalDescription(answer);
+                        await SendSdp(answer.Sdp, "answer");
+                    }
+
+                    timer.Stop();
+                }
+            };
+            timer.Start();
+
+        }
+
+        public void PollCandidate()
+        {
+            DispatcherTimer timer = new DispatcherTimer();
+            timer.Interval = TimeSpan.FromSeconds(1);
+            timer.Tick += async (o, e) =>
+            {
+                if (FromUid == 0)
+                {
+                    long.TryParse(fromUidTb.Text, out var fromUid);
+                    if (fromUid == 0)
+                    {
+                        return;
+                    }
+                    FromUid = fromUid;
+                }
+                var m = new PollCandModel
+                {
+                    fromUid = FromUid,
+                };
+                var cand = await Http.PostAsnyc(m, "pollCand");
+
+                if (cand != "")
+                {
+                    var candidate = JsonConvert.DeserializeObject<CandidateModel>(cand);
+                    await CurrentRoom.Pub.AddIceCandidate(new RTCIceCandidate
+                    {
+                        Candidate = candidate.candidate,
+                        SdpMid = candidate.sdpMid,
+                        SdpMLineIndex = candidate.sdpMlineindex,
+                    });
+                    if (CurrentRoom.Pub.IceConnectionState == RTCIceConnectionState.Connected)
+                    {
+                        timer.Stop();
+                    }
+                }
+            };
+            timer.Start();
+        }
+
+        public async Task SendSdp(string sdp, string sdpType)
+        {
+            var m = new SendSdpModel
+            {
+                sdp = new SdpModel { sdp = sdp, sdpType = sdpType },
+                uid = Uid,
+            };
+            await Http.PostAsnyc(m, "sendSdp");
+        }
+
+        public async Task SendCand(RTCIceCandidate cand)
+        {
+            var m = new SendCadidatModel
+            {
+                candidate = new CandidateModel
+                {
+                    candidate = cand.Candidate,
+                    sdpMid = cand.SdpMid,
+                    sdpMlineindex = cand.SdpMLineIndex,
+                },
+
+                uid = Uid,
+            };
+            await Http.PostAsnyc(m, "sendCand");
         }
     }
 

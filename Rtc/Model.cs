@@ -37,4 +37,29 @@ namespace Rtc
         public long uid { get; set; }
         public long fromUid { get; set; }
     }
+
+    public class PollSdpModel
+    {
+        public long fromUid { get; set; }
+        public string sdpType { get; set; }
+    }
+    public class PollCandModel
+    {
+        public long fromUid { get; set; }
+    }
+    public class SdpModel
+    {
+        public string sdpType { get; set; }
+        public string sdp { get; set; }
+    }
+    public class SendSdpModel
+    {
+        public long uid { get; set; }
+        public SdpModel sdp { get; set; }
+    }
+    public class SendCandMOdel
+    {
+        public long uid { get; set; }
+        public CandidateModel candidate { get; set; }
+    }
 }
