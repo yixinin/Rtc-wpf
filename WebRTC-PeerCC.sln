@@ -3,20 +3,23 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29806.167
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UwpWebRTC", "WebRTC.Uwp\UwpWebRTC.csproj", "{DBD9637C-669A-4F32-A058-9D001265D7BE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebRTC.UWP", "WebRTC.Uwp\WebRTC.UWP.csproj", "{DBD9637C-669A-4F32-A058-9D001265D7BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
 		Debug|ARM = Debug|ARM
 		Debug|ARM64 = Debug|ARM64
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
 		Release|ARM = Release|ARM
 		Release|ARM64 = Release|ARM64
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DBD9637C-669A-4F32-A058-9D001265D7BE}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{DBD9637C-669A-4F32-A058-9D001265D7BE}.Debug|ARM.ActiveCfg = Debug|ARM
 		{DBD9637C-669A-4F32-A058-9D001265D7BE}.Debug|ARM.Build.0 = Debug|ARM
 		{DBD9637C-669A-4F32-A058-9D001265D7BE}.Debug|ARM.Deploy.0 = Debug|ARM
@@ -29,6 +32,7 @@ Global
 		{DBD9637C-669A-4F32-A058-9D001265D7BE}.Debug|x86.ActiveCfg = Debug|x86
 		{DBD9637C-669A-4F32-A058-9D001265D7BE}.Debug|x86.Build.0 = Debug|x86
 		{DBD9637C-669A-4F32-A058-9D001265D7BE}.Debug|x86.Deploy.0 = Debug|x86
+		{DBD9637C-669A-4F32-A058-9D001265D7BE}.Release|Any CPU.ActiveCfg = Release|x86
 		{DBD9637C-669A-4F32-A058-9D001265D7BE}.Release|ARM.ActiveCfg = Release|ARM
 		{DBD9637C-669A-4F32-A058-9D001265D7BE}.Release|ARM.Build.0 = Release|ARM
 		{DBD9637C-669A-4F32-A058-9D001265D7BE}.Release|ARM.Deploy.0 = Release|ARM
