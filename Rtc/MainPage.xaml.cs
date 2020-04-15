@@ -75,8 +75,8 @@ namespace Rtc
 
             RTCMediaStreamConstraints mediaStreamConstraints = new RTCMediaStreamConstraints() //设置要获取的流 
             {
-                audioEnabled = false,
-                videoEnabled = false
+                audioEnabled = true,
+                videoEnabled = true
             };
 
             //音频播放
@@ -86,8 +86,11 @@ namespace Rtc
                 LocalMedia.SelectAudioPlayoutDevice(apd[0]);
             }
 
+           
+
             if (fromUid == 0)
             {
+
                 //音频捕获
                 var acd = LocalMedia.GetAudioCaptureDevices();
                 if (acd.Count > 0)
@@ -95,7 +98,6 @@ namespace Rtc
                     mediaStreamConstraints.audioEnabled = true;
                     LocalMedia.SelectAudioCaptureDevice(acd[0]);
                 }
-
                 //视频捕获
                 var vcd = LocalMedia.GetVideoCaptureDevices();
                 if (vcd.Count > 0)
@@ -109,23 +111,10 @@ namespace Rtc
 
 
             var mediaStream = await LocalMedia.GetUserMedia(mediaStreamConstraints);//获取视频流 这里视频和音频是一起传输的
-            if (r)
-            {
-                var videotracs = mediaStream.GetVideoTracks();
-                //var audiotracs = mediaStream.GetAudioTracks();
-                if (videotracs.Count > 0)
-                {
-                    var source = LocalMedia.CreateMediaSource(videotracs.FirstOrDefault(), mediaStream.Id);//创建播放源
-                    LocalMediaPlayer.SetMediaStreamSource(source); //设置MediaElement的播放源
-                    LocalMediaPlayer.Play();
-                }
-                await CreateReflect(mediaStream);
-                return;
-            }
+            
             if (fromUid == 0)
             {
-                var videotracs = mediaStream.GetVideoTracks();
-                //var audiotracs = mediaStream.GetAudioTracks();
+                var videotracs = mediaStream.GetVideoTracks(); 
                 if (videotracs.Count > 0)
                 {
                     var source = LocalMedia.CreateMediaSource(videotracs.FirstOrDefault(), mediaStream.Id);//创建播放源
@@ -137,10 +126,8 @@ namespace Rtc
             }
             else
             {
-                CreateClient(mediaStream);
-                //await CreateReceiver(mediaStream, fromUid);
-            }
-            PollCandidate();
+                await CreateReceiver(mediaStream, fromUid);
+            } 
         }
 
 
@@ -195,58 +182,7 @@ namespace Rtc
             CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
             await CreatOffer(Uid, 0);
         }
-
-        public async Task CreateServer(MediaStream mediaStream)
-        {
-            CurrentRoom.Pub = new RTCPeerConnection(RtcConfig);
-            CurrentRoom.Pub.AddStream(mediaStream);
-            CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
-            CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
-
-            var offer = await CurrentRoom.Pub.CreateOffer();
-            await CurrentRoom.Pub.SetLocalDescription(offer);
-            await SendSdp(offer.Sdp, "offer");
-            PollSdp("answer");
-        }
-
-        public void CreateClient(MediaStream mediaStream)
-        {
-            CurrentRoom.Pub = new RTCPeerConnection(RtcConfig);
-            CurrentRoom.Pub.AddStream(mediaStream);
-            CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
-            CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
-            long.TryParse(fromUidTb.Text, out var fromUid);
-            if (fromUid != 0)
-            {
-                PollSdp("offer");
-            }
-        }
-
-
-        public async Task CreateReflect(MediaStream mediaStream)
-        {
-            CurrentRoom.Pub = new RTCPeerConnection(RtcConfig);
-            CurrentRoom.Pub.AddStream(mediaStream);
-            CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
-            CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
-
-            var offer = await CurrentRoom.Pub.CreateOffer();
-            await CurrentRoom.Pub.SetLocalDescription(offer);
-            //PollSdp("answer");
-            PollCandidate();
-            var answerSdp = await Http.PostAsnyc(new ReflectModel
-            {
-                //candidates = Candidates,
-                sdp = offer.Sdp
-            }, "reflect");
-            await CurrentRoom.Pub.SetRemoteDescription(new RTCSessionDescription
-            {
-                Sdp = answerSdp,
-                Type = RTCSdpType.Answer,
-            });
-
-        }
-
+ 
         public async Task CreatOffer(long uid, long fromUid) //此时是发起方的操作
         {
             RTCSessionDescription offer;
