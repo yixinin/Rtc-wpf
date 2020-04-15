@@ -19,14 +19,15 @@
     <WindowsXamlEnableOverview>true</WindowsXamlEnableOverview>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <GenerateAppInstallerFile>True</GenerateAppInstallerFile>
-    <PackageCertificateKeyFile>C:\Users\yixin\source\repos\Rtc\Rtc\Rtc_TemporaryKey.pfx</PackageCertificateKeyFile>
-    <PackageCertificateThumbprint>2D46983CBA110B6331E5B4A1F3442758584220BD</PackageCertificateThumbprint>
+    <PackageCertificateKeyFile>WebRTC.UWP_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificateThumbprint>
+    </PackageCertificateThumbprint>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
     <AppxAutoIncrementPackageRevision>True</AppxAutoIncrementPackageRevision>
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
     <AppxBundle>Always</AppxBundle>
-    <AppxBundlePlatforms>x86</AppxBundlePlatforms>
-    <AppInstallerUri>C:\Program Files\rtc</AppInstallerUri>
+    <AppxBundlePlatforms>x64</AppxBundlePlatforms>
+    <AppInstallerUri>C:\Program Files\webrtc</AppInstallerUri>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
@@ -175,6 +176,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Rtc_TemporaryKey.pfx" />
+    <None Include="WebRTC.UWP_TemporaryKey.pfx" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
