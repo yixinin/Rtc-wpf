@@ -13,7 +13,7 @@
             <RowDefinition />
             <RowDefinition /> 
         </Grid.RowDefinitions>
-        <TextBlock x:Name="uidTbk" Text="0" HorizontalAlignment="Center" />
+        <TextBlock x:Name="uidTbk" Margin="0,30,0,0" Text="0" HorizontalAlignment="Center" />
         <StackPanel Width="600" Height="300" Orientation="Horizontal">
             <MediaElement x:Name="LocalMediaPlayer" Width="300"  AutoPlay="True"/>
             <MediaElement x:Name="RemoteMediaPlayer" Width="300"  AutoPlay="True" />
