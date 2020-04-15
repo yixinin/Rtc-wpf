@@ -48,11 +48,6 @@
   <Capabilities>
     <Capability Name="internetClient" />
     <Capability Name="internetClientServer"/>
-    <uap:Capability Name="musicLibrary"/>
-    <uap4:Capability Name="userDataTasks"/>
-    <uap4:Capability Name="offlineMapsManagement"/>
-    <uap6:Capability Name="graphicsCapture"/>
-    <uap:Capability Name="removableStorage"/>
     <Capability Name="privateNetworkClientServer"/>
     <DeviceCapability Name="webcam"/>
     <DeviceCapability Name="microphone"/>
