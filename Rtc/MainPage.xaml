@@ -23,6 +23,7 @@
             <TextBox x:Name="fromUidTb" Header="fromUid"/>
             <Button x:Name="JoinBtn" Click="JoinBtn_Click" VerticalAlignment="Bottom">Join</Button>
             <Button x:Name="candiateBtn" Click="CandiateBtn_Click" VerticalAlignment="Bottom">Candidate</Button>
+            <Button x:Name="reflectBtn" Click="reflectBtn_Click">Reflect</Button>
         </StackPanel>
         
     </Grid>

@@ -62,4 +62,9 @@ namespace Rtc
         public long uid { get; set; }
         public CandidateModel candidate { get; set; }
     }
+
+    public class ReflectModel
+    {
+        public string sdp { get; set; }
+    }
 }

@@ -69,7 +69,7 @@ namespace Rtc
             //Debug.WriteLine(test);
         }
 
-        public async Task CaptureMedia(long fromUid)
+        public async Task CaptureMedia(long fromUid, bool r = false)
         {
             LocalMedia = Media.CreateMedia();//创建一个Media对象
 
@@ -109,7 +109,11 @@ namespace Rtc
 
 
             var mediaStream = await LocalMedia.GetUserMedia(mediaStreamConstraints);//获取视频流 这里视频和音频是一起传输的
-
+            if (r)
+            {
+                await CreateReflect(mediaStream);
+                return;
+            }
             if (fromUid == 0)
             {
                 var videotracs = mediaStream.GetVideoTracks();
@@ -215,6 +219,24 @@ namespace Rtc
             {
                 PollSdp("offer");
             }
+        }
+
+
+        public async Task CreateReflect(MediaStream mediaStream)
+        {
+            CurrentRoom.Pub = new RTCPeerConnection(RtcConfig);
+            CurrentRoom.Pub.AddStream(mediaStream);
+            //CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
+            CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
+
+            var offer = await CurrentRoom.Pub.CreateOffer();
+            await CurrentRoom.Pub.SetLocalDescription(offer);
+            var answerSdp = await Http.PostAsnyc(new ReflectModel { sdp = offer.Sdp }, "reflect");
+            await CurrentRoom.Pub.SetRemoteDescription(new RTCSessionDescription
+            {
+                Sdp = answerSdp,
+                Type = RTCSdpType.Answer,
+            });
         }
 
         public async Task CreatOffer(long uid, long fromUid) //此时是发起方的操作
@@ -379,19 +401,15 @@ namespace Rtc
             timer.Interval = TimeSpan.FromSeconds(1);
             timer.Tick += async (o, e) =>
             {
-                if (FromUid == 0)
+                long.TryParse(fromUidTb.Text, out var fromUid);
+                if (fromUid == 0)
                 {
-                    long.TryParse(fromUidTb.Text, out var fromUid);
-                    if (fromUid == 0)
-                    {
-                        return;
-                    }
-                    FromUid = fromUid;
+                    return;
                 }
                 var m = new PollSdpModel
                 {
                     sdpType = sdpType,
-                    fromUid = FromUid,
+                    fromUid = fromUid,
                 };
                 var sdp = await Http.PostAsnyc(m, "pollSdp");
                 if (sdp != "")
@@ -422,18 +440,14 @@ namespace Rtc
             timer.Interval = TimeSpan.FromSeconds(1);
             timer.Tick += async (o, e) =>
             {
-                if (FromUid == 0)
+                long.TryParse(fromUidTb.Text, out var fromUid);
+                if (fromUid == 0)
                 {
-                    long.TryParse(fromUidTb.Text, out var fromUid);
-                    if (fromUid == 0)
-                    {
-                        return;
-                    }
-                    FromUid = fromUid;
+                    return;
                 }
                 var m = new PollCandModel
                 {
-                    fromUid = FromUid,
+                    fromUid = fromUid,
                 };
                 var cand = await Http.PostAsnyc(m, "pollCand");
 
@@ -483,6 +497,11 @@ namespace Rtc
                 uid = Uid,
             };
             await Http.PostAsnyc(m, "sendCand");
+        }
+
+        private async void reflectBtn_Click(object sender, RoutedEventArgs e)
+        {
+            await CaptureMedia(0, true);
         }
     }
 
