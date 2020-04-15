@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Org.WebRtc;
 
-namespace Rtc
+namespace UwpWebRTC
 {
     public class Room
     {

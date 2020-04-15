@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Web.Http;
 
-namespace Rtc
+namespace UwpWebRTC
 {
     public class Http
     {

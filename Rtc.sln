@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29806.167
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rtc", "Rtc\Rtc.csproj", "{DBD9637C-669A-4F32-A058-9D001265D7BE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UwpWebRTC", "Rtc\UwpWebRTC.csproj", "{DBD9637C-669A-4F32-A058-9D001265D7BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
