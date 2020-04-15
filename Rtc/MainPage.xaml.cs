@@ -12,7 +12,7 @@ using Windows.UI.Xaml.Data;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
-using webrtc_winrt_api;
+using Org.WebRtc;
 using System.Threading.Tasks;
 using Windows.Web.Http;
 using System.Diagnostics;
@@ -267,7 +267,7 @@ namespace Rtc
             };
             m.uid = Uid;
             Candidates.Add(m);
-            await SendCandidate(m);
+            await SendCandidate(m); 
         }
 
         public async Task<string> SendCandidate(SendCadidatModel m)
