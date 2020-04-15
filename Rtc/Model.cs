@@ -66,5 +66,6 @@ namespace Rtc
     public class ReflectModel
     {
         public string sdp { get; set; }
+        //public List<SendCadidatModel> candidates { get; set; }
     }
 }

@@ -111,6 +111,14 @@ namespace Rtc
             var mediaStream = await LocalMedia.GetUserMedia(mediaStreamConstraints);//获取视频流 这里视频和音频是一起传输的
             if (r)
             {
+                var videotracs = mediaStream.GetVideoTracks();
+                //var audiotracs = mediaStream.GetAudioTracks();
+                if (videotracs.Count > 0)
+                {
+                    var source = LocalMedia.CreateMediaSource(videotracs.FirstOrDefault(), mediaStream.Id);//创建播放源
+                    LocalMediaPlayer.SetMediaStreamSource(source); //设置MediaElement的播放源
+                    LocalMediaPlayer.Play();
+                }
                 await CreateReflect(mediaStream);
                 return;
             }
@@ -124,8 +132,8 @@ namespace Rtc
                     LocalMediaPlayer.SetMediaStreamSource(source); //设置MediaElement的播放源
                     LocalMediaPlayer.Play();
                 }
-                //await CreatePublisher(mediaStream);
-                await CreateServer(mediaStream);
+                await CreatePublisher(mediaStream);
+                //await CreateServer(mediaStream);
             }
             else
             {
@@ -166,14 +174,7 @@ namespace Rtc
                 var stream = p.Stream;
 
                 var videotracks = stream.GetVideoTracks();
-                //var media = Media.CreateMedia();
-
-
-                //var apd = media.GetAudioPlayoutDevices();
-                //if (apd.Count > 0)
-                //{
-                //    media.SelectAudioPlayoutDevice(apd[0]);
-                //}
+               
 
                 var source = LocalMedia.CreateMediaSource(videotracks.FirstOrDefault(), stream.Id);
 
@@ -226,17 +227,24 @@ namespace Rtc
         {
             CurrentRoom.Pub = new RTCPeerConnection(RtcConfig);
             CurrentRoom.Pub.AddStream(mediaStream);
-            //CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
+            CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
             CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
 
             var offer = await CurrentRoom.Pub.CreateOffer();
             await CurrentRoom.Pub.SetLocalDescription(offer);
-            var answerSdp = await Http.PostAsnyc(new ReflectModel { sdp = offer.Sdp }, "reflect");
+            //PollSdp("answer");
+            PollCandidate();
+            var answerSdp = await Http.PostAsnyc(new ReflectModel
+            {
+                //candidates = Candidates,
+                sdp = offer.Sdp
+            }, "reflect");
             await CurrentRoom.Pub.SetRemoteDescription(new RTCSessionDescription
             {
                 Sdp = answerSdp,
                 Type = RTCSdpType.Answer,
             });
+
         }
 
         public async Task CreatOffer(long uid, long fromUid) //此时是发起方的操作
@@ -321,13 +329,14 @@ namespace Rtc
             };
             m.uid = Uid;
             Candidates.Add(m);
-            //await SendCandidate(m);
-            await SendCand(Candidate);
+            await SendCandidate(m);
+            //await SendCand(Candidate);
         }
 
         public async Task<string> SendCandidate(SendCadidatModel m)
         {
             return await Http.PostAsnyc(m, "sendCandidate");
+            //return await Http.PostAsnyc(m, "reflectCand");
         }
 
         public async Task<string> GetCandiate(GetCandidateModel m)
@@ -454,13 +463,20 @@ namespace Rtc
                 if (cand != "")
                 {
                     var candidates = JsonConvert.DeserializeObject<List<CandidateModel>>(cand);
-
+                    if (candidates == null)
+                    {
+                        return;
+                    }
                     foreach (var candidate in candidates)
                     {
+                        if (candidate.candidate == null)
+                        {
+                            continue;
+                        }
                         await CurrentRoom.Pub.AddIceCandidate(new RTCIceCandidate
                         {
                             Candidate = candidate.candidate,
-                            SdpMid = candidate.sdpMid,
+                            SdpMid = candidate.sdpMid == null ? "" : candidate.sdpMid,
                             SdpMLineIndex = candidate.sdpMlineindex,
                         });
                     }
