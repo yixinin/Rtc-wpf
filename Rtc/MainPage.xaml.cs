@@ -27,7 +27,7 @@ namespace Rtc
     /// </summary>
     public sealed partial class MainPage : Page
     {
-         
+
         public RTCConfiguration RtcConfig { get; set; }
         public Media LocalMedia { get; set; }
         public Room CurrentRoom { get; set; }
@@ -58,8 +58,9 @@ namespace Rtc
             {
                 BundlePolicy = RTCBundlePolicy.Balanced,
                 IceServers = iceServers,
-                IceTransportPolicy = RTCIceTransportPolicy.All
+                IceTransportPolicy = RTCIceTransportPolicy.All,
             };
+           
             //var test = Http.GetAsync("Test", "").Result;
             //Debug.WriteLine(test);
         }
@@ -128,17 +129,22 @@ namespace Rtc
 
         public async Task CreateReceiver(MediaStream mediaStream, long fromUid)
         {
-             
+
 
             var conn = new RTCPeerConnection(RtcConfig);
+           
             CurrentRoom.Recvs.Add(fromUid, conn);
             CurrentRoom.Recvs[fromUid].AddStream(mediaStream);
             CurrentRoom.Recvs[fromUid].OnIceCandidate += async (p) =>
             {
                 var Candidate = p.Candidate;
-                var candidate = JsonConvert.SerializeObject(Candidate);
                 var m = new SendCadidatModel();
-                m.candidate = candidate;
+                m.candidate = new CandidateModel
+                {
+                    candidate = Candidate.Candidate,
+                    sdpMlineindex = Candidate.SdpMLineIndex,
+                    sdpMid = Candidate.SdpMid,
+                };
                 m.uid = Uid;
                 m.fromUid = fromUid;
                 Candidates.Add(m);
@@ -151,7 +157,7 @@ namespace Rtc
 
                 var videotracks = stream.GetVideoTracks();
                 //var media = Media.CreateMedia();
-                
+
 
                 //var apd = media.GetAudioPlayoutDevices();
                 //if (apd.Count > 0)
@@ -171,14 +177,14 @@ namespace Rtc
         }
 
         async private Task CreatePublisher(MediaStream mediaStream)
-        { 
+        {
             CurrentRoom.Pub = new RTCPeerConnection(RtcConfig);
             CurrentRoom.Pub.AddStream(mediaStream);
             CurrentRoom.Pub.OnIceCandidate += Conn_OnIceCandidateAsync;
             CurrentRoom.Pub.OnAddStream += Conn_OnAddStream;
             await CreatOffer(Uid, 0);
         }
-         
+
         public async Task CreatOffer(long uid, long fromUid) //此时是发起方的操作
         {
             RTCSessionDescription offer;
@@ -252,9 +258,13 @@ namespace Rtc
         private async void Conn_OnIceCandidateAsync(RTCPeerConnectionIceEvent __param0)
         {
             var Candidate = __param0.Candidate;
-            var candidate = JsonConvert.SerializeObject(Candidate);
             var m = new SendCadidatModel();
-            m.candidate = candidate;
+            m.candidate = new CandidateModel
+            {
+                candidate = Candidate.Candidate,
+                sdpMid = Candidate.SdpMid,
+                sdpMlineindex = Candidate.SdpMLineIndex
+            };
             m.uid = Uid;
             Candidates.Add(m);
             await SendCandidate(m);
@@ -280,12 +290,17 @@ namespace Rtc
             var candiate = await GetCandiate(m);
             if (candiate != "")
             {
-                var candidates = JsonConvert.DeserializeObject<List<string>>(candiate);
+                var candidates = JsonConvert.DeserializeObject<List<CandidateModel>>(candiate);
                 if (fromUidTb.Text == "")
                 {
                     foreach (var c in candidates)
                     {
-                        await CurrentRoom.Pub.AddIceCandidate(JsonConvert.DeserializeObject<RTCIceCandidate>(c));
+                        await CurrentRoom.Pub.AddIceCandidate(new RTCIceCandidate
+                        {
+                            SdpMid = c.sdpMid,
+                            Candidate = c.candidate,
+                            SdpMLineIndex = (ushort)c.sdpMlineindex,
+                        });
                     }
 
                 }
@@ -301,7 +316,12 @@ namespace Rtc
                     }
                     foreach (var c in candidates)
                     {
-                        await CurrentRoom.Recvs[fromUid].AddIceCandidate(JsonConvert.DeserializeObject<RTCIceCandidate>(c));
+                        await CurrentRoom.Recvs[fromUid].AddIceCandidate(new RTCIceCandidate
+                        {
+                            SdpMid = c.sdpMid,
+                            Candidate = c.candidate,
+                            SdpMLineIndex = (ushort)c.sdpMlineindex,
+                        });
                     }
 
                 }
@@ -321,27 +341,4 @@ namespace Rtc
         }
     }
 
-    public class GetAnswerModel
-    {
-        public string offer { get; set; }
-        public long uid { get; set; }
-        public long fromUid { get; set; }
-        public int roomId { get; set; }
-    }
-
-    public class SendCadidatModel
-    {
-        public int roomId { get; set; }
-        public long uid { get; set; }
-        public long fromUid { get; set; }
-        public string candidate { get; set; }
-    }
-
-    public class GetCandidateModel
-    {
-
-        public int roomId { get; set; }
-        public long uid { get; set; }
-        public long fromUid { get; set; }
-    }
 }
