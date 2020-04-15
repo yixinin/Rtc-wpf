@@ -121,7 +121,7 @@ namespace Rtc
                     LocalMediaPlayer.Play();
                 }
                 //await CreatePublisher(mediaStream);
-               await CreateServer(mediaStream);
+                await CreateServer(mediaStream);
             }
             else
             {
@@ -201,6 +201,7 @@ namespace Rtc
             var offer = await CurrentRoom.Pub.CreateOffer();
             await CurrentRoom.Pub.SetLocalDescription(offer);
             await SendSdp(offer.Sdp, "offer");
+            PollSdp("answer");
         }
 
         public void CreateClient(MediaStream mediaStream)
@@ -438,13 +439,17 @@ namespace Rtc
 
                 if (cand != "")
                 {
-                    var candidate = JsonConvert.DeserializeObject<CandidateModel>(cand);
-                    await CurrentRoom.Pub.AddIceCandidate(new RTCIceCandidate
+                    var candidates = JsonConvert.DeserializeObject<List<CandidateModel>>(cand);
+
+                    foreach (var candidate in candidates)
                     {
-                        Candidate = candidate.candidate,
-                        SdpMid = candidate.sdpMid,
-                        SdpMLineIndex = candidate.sdpMlineindex,
-                    });
+                        await CurrentRoom.Pub.AddIceCandidate(new RTCIceCandidate
+                        {
+                            Candidate = candidate.candidate,
+                            SdpMid = candidate.sdpMid,
+                            SdpMLineIndex = candidate.sdpMlineindex,
+                        });
+                    }
                     if (CurrentRoom.Pub.IceConnectionState == RTCIceConnectionState.Connected)
                     {
                         timer.Stop();
