@@ -11,8 +11,9 @@ namespace UwpWebRTC
 {
     public class Http
     {
-        const string BaseURL = "http://101.132.242.31:8000/";
-        //const string BaseURL = "http://localhost:8080/";
+        //const string BaseURL = "http://101.132.242.31:8000/";
+        //const string BaseURL = "http://localhost:8000/";
+        const string BaseURL = "http://10.0.0.218:8000/";
 
         public async static Task<string> PostAsnyc(object m, string url)
         {
@@ -34,6 +35,7 @@ namespace UwpWebRTC
             }
             catch (Exception ex)
             {
+                Debug.WriteLine(BaseURL + url);
                 Debug.WriteLine("http post ex:" + ex);
             }
 
