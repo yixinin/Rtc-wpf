@@ -128,7 +128,7 @@ namespace Rtc
                 CreateClient(mediaStream);
                 //await CreateReceiver(mediaStream, fromUid);
             }
-
+            PollCandidate();
         }
 
 
